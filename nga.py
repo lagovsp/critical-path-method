@@ -188,3 +188,7 @@ class Path:
 				raise 'path string given to Path is invalid'
 		self.__p = es
 		return es
+
+
+def critical_analysis():
+	return 0
