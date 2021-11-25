@@ -1,44 +1,41 @@
 from nga import *
 from input import *
-import copy
+from prettytable import PrettyTable
+from sty import *
+
+fg.orange = Style(RgbFg(255, 150, 50))
 
 
 def main():
-	for n in N:
-		print(n)
-	# for n1 in N:
-	# 	for n2 in N:
-	# 		if can_merge_ns(n1, n2):
-	# 			n1.merge(n2)
-	# 			N.remove(n2)
+	table = PrettyTable()
+	table.title = fg.orange + 'Given branches before analyzing' + fg.rs
+	table.add_column(fg.orange + 'Branch ID' + fg.rs, [b for b in B.values()])
+	table.add_column(fg.orange + 'Time' + fg.rs, [b.time() for b in B.values()])
+	table.add_column(fg.orange + 'From' + fg.rs, [b.leaves() for b in B.values()])
+	table.add_column(fg.orange + 'To' + fg.rs, [b.points() for b in B.values()])
+	print(table)
 
 	merge_ns(N)
 
-	print()
-	for n in N:
-		print(n)
-	# print()
-	# print()
-	#
-	# for n in N:
-	# 	# print(n)
-	# 	n.print()
-	# new = copy.deepcopy(N)
-	# new_order = []
-	# while True:
-	# 	for n in new_order:
-	# 		if not n.in_bs():
-	# 			new_order.append(n)
-	# 			new.remove(n)
+	table = PrettyTable()
+	table.title = fg.orange + 'After analysis' + fg.rs
+	table.add_column(fg.orange + 'Branch ID' + fg.rs, [b for b in B.values()])
+	table.add_column(fg.orange + 'Time' + fg.rs, [b.time() for b in B.values()])
+	table.add_column(fg.orange + 'From' + fg.rs, [b.leaves() for b in B.values()])
+	table.add_column(fg.orange + 'To' + fg.rs, [b.points() for b in B.values()])
+	add_col = [[i.__str__() for i in b.leaves().entered_bs()] for b in B.values()]
+	table.add_column(fg.orange + 'Prev branches' + fg.rs, add_col)
+	print(table)
 
-	sn = find_start_ns(N)
-	print(f'sn - {sn}')
-	p = Path()
-	p.set_sn(sn)
-	p.set_p(['a', 'c', 'e'])
-	a = p.go_p()
-	for it in a:
-		print(it.__str__())
+	table = PrettyTable()
+	table.title = fg.orange + 'Nodes after analysis' + fg.rs
+	table.add_column(fg.orange + 'Node ID' + fg.rs, N)
+	add_col = [[i.__str__() for i in b.entered_bs()] for b in N]
+	table.add_column(fg.orange + 'Entering branches' + fg.rs, add_col)
+	add_col = [[i.__str__() for i in b.out_bs()] for b in N]
+	table.add_column(fg.orange + 'Leaving branches branches' + fg.rs, add_col)
+	print(table)
+
 	return 0
 
 
