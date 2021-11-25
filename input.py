@@ -1,4 +1,5 @@
 from nga import *
+import copy
 
 
 B = {
@@ -16,15 +17,15 @@ B = {
 }
 
 N = [
-	link([], Node(B['a'])),
-	link([], Node(B['b'])),
-	link([B['a']], Node(B['c'])),
-	link([], Node(B['d'])),
-	link([B['b'], B['c']], Node(B['e'])),
-	link([B['a']], Node(B['f'])),
-	link([B['b'], B['c']], Node(B['g'])),
-	link([B['a']], Node(B['h'])),
-	link([B['h'], B['g']], Node(B['i'])),
-	link([B['f'], B['e'], B['d']], Node(B['j'])),
-	link([B['b'], B['c']], Node(B['k']))
+	link([], Node(), [B['a']]),
+	link([], Node(), [B['b']]),
+	link([(B['a'])], Node(), [B['c']]),
+	link([], Node(), [B['d']]),
+	link([B['b'], B['c']], Node(), [B['e']]),
+	link([B['a']], Node(), [B['f']]),
+	link([B['b'], B['c']], Node(), [B['g']]),
+	link([B['a']], Node(), [B['h']]),
+	link([B['h'], B['g']], Node(), [B['i']]),
+	link([B['f'], B['e'], B['d']], Node(), [B['j']]),
+	link([B['b'], B['c']], Node(), [B['k']])
 ]
