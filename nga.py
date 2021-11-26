@@ -1,23 +1,39 @@
 class Node:
 	__nc = 0
 
+	@staticmethod
+	def can_merge_ns(n1, n2):
+		if id(n1) == id(n2):
+			return False
+		if len(n1.ins()) != len(n2.ins()):
+			return False
+		for b in n1.ins():
+			if b not in n2.ins():
+				return False
+		return True
+
 	def __init__(self):
 		Node.__nc += 1
 		self.__id = Node.__nc
 		self.__ins = []
 		self.__outs = []
-		self.__ts = []
-		self.__r = None
+		self.__t_e_l_r = [None, None, None]
 		self.__is_in_critical = False
 		self.__is_start = None
 		self.__is_end = None
 
-	def __set_start(self, status = True):
-		self.__is_start = status
+	def check_if_is_start(self):
+		if not self.__ins:
+			self.__is_start = True
+		else:
+			self.__is_start = False
 		return self
 
-	def __set_end(self, status = True):
-		self.__is_end = status
+	def check_if_is_end(self):
+		if not self.__outs:
+			self.__is_end = True
+		else:
+			self.__is_end = False
 		return self
 
 	def is_end(self):
@@ -27,14 +43,8 @@ class Node:
 		return self.__is_start
 
 	def update(self):
-		if self.__is_end:
-			self.__set_end()
-		else:
-			self.__set_end(status = False)
-		if self.__is_start:
-			self.__set_start()
-		else:
-			self.__set_start(status = False)
+		self.check_if_is_start()
+		self.check_if_is_end()
 		return self
 
 	def set_outs(self, es):
@@ -44,10 +54,10 @@ class Node:
 		self.update()
 		return self
 
-	def add_outs(self, es):
-		self.__outs = self.__outs + es
-		self.__outs = list(set(self.__outs))
-		return self
+	# def add_outs(self, es):
+	# 	self.__outs = self.__outs + es
+	# 	self.__outs = list(set(self.__outs))
+	# 	return self
 
 	def set_ins(self, es):
 		self.__ins = es
@@ -56,10 +66,10 @@ class Node:
 		self.update()
 		return self
 
-	def add_ins(self, es):
-		self.__ins = self.__ins + es
-		self.__ins = list(set(self.__ins))
-		return self
+	# def add_ins(self, es):
+	# 	self.__ins = self.__ins + es
+	# 	self.__ins = list(set(self.__ins))
+	# 	return self
 
 	def update_id(self, id):
 		self.__id = id
@@ -69,8 +79,26 @@ class Node:
 			e.set_from_n(self)
 		return self
 
+	def calculate_t_early(self):
+		self.__t_e_l_r[0] = max([ei.from_n().calculate_t_early() + ei.time() for ei in self.__ins], default = 0)
+		return self.__t_e_l_r[0]
+
+	def calculate_t_later(self):
+		self.__t_e_l_r[1] = min([eo.to_n().calculate_t_later() - eo.time() for eo in self.__outs], default =
+		self.__t_e_l_r[0])
+		return self.__t_e_l_r[1]
+
+	def calculate_r(self):
+		self.__t_e_l_r[2] = self.__t_e_l_r[1] - self.__t_e_l_r[0]
+		if self.__t_e_l_r[2] == 0:
+			self.__is_in_critical = True
+		return self.__t_e_l_r[2]
+
 	def merge(self, n):
-		self.__outs.extend(n.__outs)
+		for e in n.outs():
+			if e not in self.__outs:
+				self.__outs.append(e)
+		# self.__outs.extend(n.__outs)
 		for b in n.ins():
 			b.set_to_n(self)
 		for b in n.outs():
@@ -87,12 +115,14 @@ class Node:
 	def outs_ts(self):
 		return [b.name() for b in self.__outs]
 
-	def title(self):
+	def times(self):
+		return self.__t_e_l_r
+
+	def name(self):
 		return self.__id
 
 	def __str__(self):
-		pl = ''
-		ol = ''
+		pl, ol = '', ''
 		for fb in self.__ins:
 			pl += f'{fb.name()}'
 		for tb in self.__outs:
@@ -112,8 +142,20 @@ class Edge:
 		self.__id = Edge.__ec
 		self.__n = n
 		self.__t = t
+		self.__t_ls = None  # later_start
+		self.__t_ee = None  # early_end
+		self.__r_fl_fr = [None, None]  # [R_full, R_later]
 		self.__from = None
 		self.__to = None
+
+	def calculate(self):
+		self.__t_ls = self.__to.times()[1] - self.__t
+		self.__t_ee = self.__from.times()[0] + self.__t
+		self.__r_fl_fr[0] = self.__to.times()[1] - self.__from.times()[0] - self.__t
+		self.__r_fl_fr[1] = self.__to.times()[0] - self.__from.times()[0] - self.__t
+
+	def tls_tee_rfl_rfr(self):
+		return [self.__t_ls, self.__t_ee, self.__r_fl_fr[0], self.__r_fl_fr[1]]
 
 	def to_n(self):
 		return self.__to
@@ -137,47 +179,42 @@ class Edge:
 
 	def __str__(self):
 		if self.to_n():
-			p = self.to_n().title()
+			t = self.to_n().name()
 		else:
-			p = 'None'
-		return f'{self.__t}{self.__n}B{self.from_n().title()}-{p}'
+			t = 'None'
+		if self.from_n():
+			f = self.from_n().name()
+		else:
+			f = 'None'
+		return f'{self.__t}{self.__n}E{f}-{t}'
 
 
-def can_merge_ns(n1, n2):
-	if id(n1) == id(n2):
-		return False
-	if len(n1.ins()) != len(n2.ins()):
-		return False
-	for b in n1.ins():
-		if b not in n2.ins():
-			return False
-	return True
-
-
-def find_n_with_ins(ns, ins):
-	bns = [e.name() for e in ins]
+def find_n_with(ns, es, flag = 'ins'):
+	ens = [e.name() for e in es]
 	for n in ns:
 		cur_bs = [b.name() for b in n.ins()]
-		if set(bns) == set(cur_bs):
+		if flag == 'outs':
+			cur_bs = [b.name() for b in n.outs()]
+		if set(ens) == set(cur_bs):
 			return n
 	return False
 
 
-def find_n_with_outs(ns, outs):
-	bns = [e.name() for e in outs]
-	for n in ns:
-		cur_bs = [b.name() for b in n.outs()]
-		if set(bns) == set(cur_bs):
-			return n
-	return False
+# def find_n_with_outs(ns, outs):
+# 	bns = [e.name() for e in outs]
+# 	for n in ns:
+# 		cur_bs = [b.name() for b in n.outs()]
+# 		if set(bns) == set(cur_bs):
+# 			return n
+# 	return False
 
 
-def find_start_n(ns):
-	return find_n_with_ins(ns, [])
+def find_start(ns):
+	return find_n_with(ns, [], flag = 'ins')
 
 
-def find_end_n(ns):
-	return find_n_with_outs(ns, [])
+def find_end(ns):
+	return find_n_with(ns, [], flag = 'outs')
 
 
 def find_end_es(ns):
@@ -206,76 +243,94 @@ def link(ins, n, outs):
 	return n
 
 
-class Path:
-	def __init__(self):
-		self.__sn = None
-		self.__pl = None
-		self.__t = None
-		self.__p = None
-
-	def find_critical(self):
-		pass
-
-	def set_sn(self, sn):
-		self.__sn = sn
-
-	def set_p(self, pl):
-		self.__pl = pl
-
-	def path(self):
-		if self.__p:
-			return self.__p
-		else:
-			return self.go_p()
-
-	def go_p(self):
-		pl = self.__pl
-		es = [self.__sn]
-		cur_n = self.__sn
-		for bl in pl:
-			print()
-			print(f'last node {es[len(es) - 1]}')
-			print(f'cur leaves {cur_n.outs_ts()}')
-			print(f'we go {bl}')
-			if bl in cur_n.outs_ts():
-				b = cur_n.outs()[cur_n.outs_ts().index(bl)]
-				print()
-				es.append(b.name())
-				es.append(b.to_n())
-				cur_n = b.to_n()
-			else:
-				print(es)
-				print([b.name() for b in cur_n.outs()])
-				raise 'path string given to Path is invalid'
-		self.__p = es
-		return es
+# class Path:
+# 	def __init__(self):
+# 		self.__sn = None
+# 		self.__pl = None
+# 		self.__t = None
+# 		self.__p = None
+#
+# 	def find_critical(self):
+# 		pass
+#
+# 	def set_sn(self, sn):
+# 		self.__sn = sn
+#
+# 	def set_p(self, pl):
+# 		self.__pl = pl
+#
+# 	def path(self):
+# 		if self.__p:
+# 			return self.__p
+# 		else:
+# 			return self.go_p()
+#
+# 	def go_p(self):
+# 		pl = self.__pl
+# 		es = [self.__sn]
+# 		cur_n = self.__sn
+# 		for bl in pl:
+# 			print()
+# 			print(f'last node {es[len(es) - 1]}')
+# 			print(f'cur leaves {cur_n.outs_ts()}')
+# 			print(f'we go {bl}')
+# 			if bl in cur_n.outs_ts():
+# 				b = cur_n.outs()[cur_n.outs_ts().index(bl)]
+# 				print()
+# 				es.append(b.name())
+# 				es.append(b.to_n())
+# 				cur_n = b.to_n()
+# 			else:
+# 				print(es)
+# 				print([b.name() for b in cur_n.outs()])
+# 				raise 'path string given to Path is invalid'
+# 		self.__p = es
+# 		return es
 
 
 class Graph:
-	def update_all_id(self):
-		self.__sn.update().update_id(0)
-		find_end_n(self.__ns).update().update_id(len(self.__ns) - 1)
-		i = 1
-		for n in self.__ns:
-			if not n.is_start() and not n.is_end():
-				n.update().update_id(i)
-				i += 1
-
 	def __init__(self):
 		self.__sn = None
 		self.__ns = None
 		self.__cp = None
 
+	def update_all_id(self):
+		self.__sn.update().update_id(0)
+		find_end(self.__ns).update().update_id(len(self.__ns) - 1)
+		i = 1
+		for n in self.__ns:
+			n.update()
+			if not n.is_start() and not n.is_end():
+				n.update_id(i)
+				i += 1
+
 	def complete(self):
-		if not find_end_n(self.__ns):
+		if not find_end(self.__ns):
 			n = Node()
 			n.set_ins(find_end_es(self.__ns))
 			self.__ns.append(n)
-		if not find_start_n(self.__ns):
+		if not find_start(self.__ns):
 			n = Node()
-			n.set_outs(find_start_n(self.__ns))
+			n.set_outs(find_start(self.__ns))
 			self.__ns.append(n)
 			self.__sn = n
+
+	def ns(self):
+		return self.__ns
+
+	def es(self):
+		pushed = []
+		result = []
+		for n in self.__ns:
+			for e in n.ins():
+				if not id(e) in pushed:
+					result.append(e)
+					pushed.append(id(e))
+			for e in n.outs():
+				if not id(e) in pushed:
+					result.append(e)
+					pushed.append(id(e))
+		return result
 
 	def set_sn(self, sn):
 		self.__sn = sn
@@ -283,20 +338,29 @@ class Graph:
 
 	def set_ns(self, ns):
 		self.__ns = ns
-		self.__sn = find_start_n(self.__ns)
-
-	def ns(self):
-		return self.__ns
+		self.__sn = find_start(self.__ns)
 
 	def merge(self):
-		self.complete()
 		for n in self.__ns:
 			def rule(test_n):
-				return can_merge_ns(n, test_n)
+				return Node.can_merge_ns(n, test_n)
 
 			for n2 in list(filter(rule, self.__ns)):
 				n.merge(n2)
 				self.__ns.remove(n2)
+
+	def calculate_parameters(self):
+		find_end(self.__ns).calculate_t_early()
+		find_start(self.__ns).calculate_t_later()
+		for n in self.__ns:
+			n.calculate_r()
+
+		for e in self.es():
+			e.calculate()
+
+	def organize(self):
+		self.complete()
+		self.merge()
 		self.update_all_id()
 
 

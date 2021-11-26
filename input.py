@@ -1,7 +1,5 @@
 from nga import *
-import copy
 
-g = Graph()
 B = {
 	'a': Edge('a', 3),
 	'b': Edge('b', 5),
@@ -30,4 +28,5 @@ N = [
 	link([B['b'], B['c']], Node(), [B['k']])
 ]
 
+g = Graph()
 g.set_ns(N)
