@@ -4,39 +4,88 @@ class Node:
 	def __init__(self):
 		Node.__nc += 1
 		self.__id = Node.__nc
-		self.__entered_bs = []
-		self.__out_bs = []
-		for b in self.__out_bs:
-			b.set_left_n(self)
+		self.__ins = []
+		self.__outs = []
+		self.__ts = []
+		self.__r = None
+		self.__is_in_critical = False
+		self.__is_start = None
+		self.__is_end = None
 
-	def set_outgoing_bs(self, bs):
-		self.__out_bs = bs
-		for b in self.__out_bs:
-			b.set_left_n(self)
+	def __set_start(self, status = True):
+		self.__is_start = status
 		return self
 
-	def set_entering_bs(self, bs):
-		self.__entered_bs = bs
-		for b in self.__entered_bs:
-			b.set_pointed_n(self)
+	def __set_end(self, status = True):
+		self.__is_end = status
+		return self
+
+	def is_end(self):
+		return self.__is_end
+
+	def is_start(self):
+		return self.__is_start
+
+	def update(self):
+		if self.__is_end:
+			self.__set_end()
+		else:
+			self.__set_end(status = False)
+		if self.__is_start:
+			self.__set_start()
+		else:
+			self.__set_start(status = False)
+		return self
+
+	def set_outs(self, es):
+		self.__outs = es
+		for b in self.__outs:
+			b.set_from_n(self)
+		self.update()
+		return self
+
+	def add_outs(self, es):
+		self.__outs = self.__outs + es
+		self.__outs = list(set(self.__outs))
+		return self
+
+	def set_ins(self, es):
+		self.__ins = es
+		for b in self.__ins:
+			b.set_to_n(self)
+		self.update()
+		return self
+
+	def add_ins(self, es):
+		self.__ins = self.__ins + es
+		self.__ins = list(set(self.__ins))
+		return self
+
+	def update_id(self, id):
+		self.__id = id
+		for e in self.__ins:
+			e.set_to_n(self)
+		for e in self.__outs:
+			e.set_from_n(self)
 		return self
 
 	def merge(self, n):
-		self.__out_bs.extend(n.__out_bs)
-		for b in n.entered_bs():
-			b.set_pointed_n(self)
-		for b in n.out_bs():
-			b.set_left_n(self)
+		self.__outs.extend(n.__outs)
+		for b in n.ins():
+			b.set_to_n(self)
+		for b in n.outs():
+			b.set_from_n(self)
+		self.update()
 		return self
 
-	def entered_bs(self):
-		return self.__entered_bs
+	def ins(self):
+		return self.__ins
 
-	def out_bs(self):
-		return self.__out_bs
+	def outs(self):
+		return self.__outs
 
-	def out_ts(self):
-		return [b.title() for b in self.__out_bs]
+	def outs_ts(self):
+		return [b.name() for b in self.__outs]
 
 	def title(self):
 		return self.__id
@@ -44,10 +93,10 @@ class Node:
 	def __str__(self):
 		pl = ''
 		ol = ''
-		for fb in self.__entered_bs:
-			pl += f'{fb.title()}'
-		for tb in self.__out_bs:
-			ol += f'{tb.title()}'
+		for fb in self.__ins:
+			pl += f'{fb.name()}'
+		for tb in self.__outs:
+			ol += f'{tb.name()}'
 		if not pl:
 			pl = '_'
 		if not ol:
@@ -55,95 +104,106 @@ class Node:
 		return pl + f'N{self.__id}' + ol
 
 
-class Branch:
-	__bc = 0
-	# __bs = []
+class Edge:
+	__ec = 0
 
-	def __init__(self, title, time):
-		Branch.__bc += 1
-		self.__id = Branch.__bc
-		self.__title = title
-		self.__time = time
-		self.__left_n = None
-		self.__pointed_n = None
-	# Branch.__bs.append(self)
+	def __init__(self, n, t):
+		Edge.__ec += 1
+		self.__id = Edge.__ec
+		self.__n = n
+		self.__t = t
+		self.__from = None
+		self.__to = None
 
-	def points(self):
-		return self.__pointed_n
+	def to_n(self):
+		return self.__to
 
-	def leaves(self):
-		return self.__left_n
+	def from_n(self):
+		return self.__from
 
-	def set_pointed_n(self, n):
-		self.__pointed_n = n
+	def set_to_n(self, n):
+		self.__to = n
 		return self
 
-	def set_left_n(self, n):
-		self.__left_n = n
+	def set_from_n(self, n):
+		self.__from = n
 		return self
 
 	def time(self):
-		return self.__time
+		return self.__t
 
-	def title(self):
-		return self.__title
+	def name(self):
+		return self.__n
 
 	def __str__(self):
-		if self.points():
-			p = self.points().title()
+		if self.to_n():
+			p = self.to_n().title()
 		else:
 			p = 'None'
-		return f'{self.__time}{self.__title}B{self.leaves().title()}-{p}'
+		return f'{self.__t}{self.__n}B{self.from_n().title()}-{p}'
 
 
 def can_merge_ns(n1, n2):
 	if id(n1) == id(n2):
 		return False
-	if len(n1.entered_bs()) != len(n2.entered_bs()):
+	if len(n1.ins()) != len(n2.ins()):
 		return False
-	for b in n1.entered_bs():
-		if b not in n2.entered_bs():
+	for b in n1.ins():
+		if b not in n2.ins():
 			return False
 	return True
 
 
-def find_n_w_in_bs(ns, bs):
-	bns = [b.title() for b in bs]
+def find_n_with_ins(ns, ins):
+	bns = [e.name() for e in ins]
 	for n in ns:
-		cur_bs = [b.title() for b in n.entered_bs()]
+		cur_bs = [b.name() for b in n.ins()]
 		if set(bns) == set(cur_bs):
 			return n
 	return False
 
 
-def find_start_ns(ns):
-	return find_n_w_in_bs(ns, [])
-
-
-def find_end_bs(ns):
-	next_wks = []
+def find_n_with_outs(ns, outs):
+	bns = [e.name() for e in outs]
 	for n in ns:
-		next_wks.extend([b.title() for b in n.out_bs()])
-	next_wks = list(set(next_wks))
-	start_wks = []
+		cur_bs = [b.name() for b in n.outs()]
+		if set(bns) == set(cur_bs):
+			return n
+	return False
+
+
+def find_start_n(ns):
+	return find_n_with_ins(ns, [])
+
+
+def find_end_n(ns):
+	return find_n_with_outs(ns, [])
+
+
+def find_end_es(ns):
+	ends = []
 	for n in ns:
-		start_wks.extend([b.title() for b in n.entered_bs()])
-	start_wks = list(set(start_wks))
-	return [it for it in next_wks if it not in start_wks]
+		cur_outs = n.outs()
+		for eo in cur_outs:
+			if not eo.to_n():
+				ends.append(eo)
+	return ends
 
 
-def merge_ns(ns):
+def find_start_es(ns):
+	starts = []
 	for n in ns:
-		def rule(test_n):
-			return can_merge_ns(n, test_n)
+		cur_ins = n.ins()
+		for ei in cur_ins:
+			if not ei.from_n():
+				starts.append(ei)
+	return starts
 
-		for n2 in list(filter(rule, ns)):
-			n.merge(n2)
-			ns.remove(n2)
 
-
-def link(ibs, to_n, obs):
-	return to_n.set_entering_bs(ibs).set_outgoing_bs(obs)
+def link(ins, n, outs):
+	n.set_ins(ins)
+	n.set_outs(outs)
+	return n
 
 
 class Path:
@@ -153,13 +213,14 @@ class Path:
 		self.__t = None
 		self.__p = None
 
+	def find_critical(self):
+		pass
+
 	def set_sn(self, sn):
 		self.__sn = sn
-		return self
 
 	def set_p(self, pl):
 		self.__pl = pl
-		return self
 
 	def path(self):
 		if self.__p:
@@ -174,21 +235,70 @@ class Path:
 		for bl in pl:
 			print()
 			print(f'last node {es[len(es) - 1]}')
-			print(f'cur leaves {cur_n.out_ts()}')
+			print(f'cur leaves {cur_n.outs_ts()}')
 			print(f'we go {bl}')
-			if bl in cur_n.out_ts():
-				b = cur_n.out_bs()[cur_n.out_ts().index(bl)]
+			if bl in cur_n.outs_ts():
+				b = cur_n.outs()[cur_n.outs_ts().index(bl)]
 				print()
-				es.append(b.title())
-				es.append(b.points())
-				cur_n = b.points()
+				es.append(b.name())
+				es.append(b.to_n())
+				cur_n = b.to_n()
 			else:
 				print(es)
-				print([b.title() for b in cur_n.out_bs()])
+				print([b.name() for b in cur_n.outs()])
 				raise 'path string given to Path is invalid'
 		self.__p = es
 		return es
 
 
+class Graph:
+	def update_all_id(self):
+		self.__sn.update().update_id(0)
+		find_end_n(self.__ns).update().update_id(len(self.__ns) - 1)
+		i = 1
+		for n in self.__ns:
+			if not n.is_start() and not n.is_end():
+				n.update().update_id(i)
+				i += 1
+
+	def __init__(self):
+		self.__sn = None
+		self.__ns = None
+		self.__cp = None
+
+	def complete(self):
+		if not find_end_n(self.__ns):
+			n = Node()
+			n.set_ins(find_end_es(self.__ns))
+			self.__ns.append(n)
+		if not find_start_n(self.__ns):
+			n = Node()
+			n.set_outs(find_start_n(self.__ns))
+			self.__ns.append(n)
+			self.__sn = n
+
+	def set_sn(self, sn):
+		self.__sn = sn
+		return self
+
+	def set_ns(self, ns):
+		self.__ns = ns
+		self.__sn = find_start_n(self.__ns)
+
+	def ns(self):
+		return self.__ns
+
+	def merge(self):
+		self.complete()
+		for n in self.__ns:
+			def rule(test_n):
+				return can_merge_ns(n, test_n)
+
+			for n2 in list(filter(rule, self.__ns)):
+				n.merge(n2)
+				self.__ns.remove(n2)
+		self.update_all_id()
+
+
 def critical_analysis():
-	return 0
+	pass

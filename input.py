@@ -1,19 +1,19 @@
 from nga import *
 import copy
 
-
+g = Graph()
 B = {
-	'a': Branch('a', 3),
-	'b': Branch('b', 5),
-	'c': Branch('c', 2),
-	'd': Branch('d', 4),
-	'e': Branch('e', 3),
-	'f': Branch('f', 1),
-	'g': Branch('g', 4),
-	'h': Branch('h', 3),
-	'i': Branch('i', 3),
-	'j': Branch('j', 2),
-	'k': Branch('k', 5)
+	'a': Edge('a', 3),
+	'b': Edge('b', 5),
+	'c': Edge('c', 2),
+	'd': Edge('d', 4),
+	'e': Edge('e', 3),
+	'f': Edge('f', 1),
+	'g': Edge('g', 4),
+	'h': Edge('h', 3),
+	'i': Edge('i', 3),
+	'j': Edge('j', 2),
+	'k': Edge('k', 5)
 }
 
 N = [
@@ -29,3 +29,5 @@ N = [
 	link([B['f'], B['e'], B['d']], Node(), [B['j']]),
 	link([B['b'], B['c']], Node(), [B['k']])
 ]
+
+g.set_ns(N)
