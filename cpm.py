@@ -15,13 +15,21 @@ class Node:
 				return False
 		return True
 
+	@staticmethod
+	def critical_path(node):
+		if node.outs():
+			periods = [Node.critical_path(e.to_n())[0] + e.time() if e.to_n().is_critical() else 0 for e in node.outs()]
+			return [max(periods, default = 0), node.outs()[np.array(periods).argmax()]]
+		else:
+			return [0, None]
+
 	def __init__(self):
 		Node.__nc += 1
 		self.__id = Node.__nc
 		self.__ins = []
 		self.__outs = []
-		self.__t_e_l_r = [None, None, None]
-		self.__is_on_critical = False
+		self.__telr = [None, None, None]
+		self.__is_critical = False
 		self.__is_start = None
 		self.__is_end = None
 
@@ -30,14 +38,12 @@ class Node:
 			self.__is_start = True
 		else:
 			self.__is_start = False
-		return self
 
 	def check_if_is_end(self):
 		if not self.__outs:
 			self.__is_end = True
 		else:
 			self.__is_end = False
-		return self
 
 	def is_end(self):
 		return self.__is_end
@@ -45,8 +51,8 @@ class Node:
 	def is_start(self):
 		return self.__is_start
 
-	def is_on_critical(self):
-		return self.__is_on_critical
+	def is_critical(self):
+		return self.__is_critical
 
 	def update(self):
 		self.check_if_is_start()
@@ -60,22 +66,12 @@ class Node:
 		self.update()
 		return self
 
-	# def add_outs(self, es):
-	# 	self.__outs = self.__outs + es
-	# 	self.__outs = list(set(self.__outs))
-	# 	return self
-
 	def set_ins(self, es):
 		self.__ins = es
 		for b in self.__ins:
 			b.set_to_n(self)
 		self.update()
 		return self
-
-	# def add_ins(self, es):
-	# 	self.__ins = self.__ins + es
-	# 	self.__ins = list(set(self.__ins))
-	# 	return self
 
 	def update_id(self, id):
 		self.__id = id
@@ -86,27 +82,22 @@ class Node:
 		return self
 
 	def calculate_te(self):
-		self.__t_e_l_r[0] = max([ei.from_n().calculate_te() + ei.time() for ei in self.__ins], default = 0)
-		return self.__t_e_l_r[0]
+		self.__telr[0] = max([ei.from_n().calculate_te() + ei.time() for ei in self.ins()], default = 0)
+		return self.__telr[0]
 
 	def calculate_tl(self):
-		self.__t_e_l_r[1] = min([eo.to_n().calculate_tl() - eo.time() for eo in self.__outs], default =
-		self.__t_e_l_r[0])
-		return self.__t_e_l_r[1]
+		self.__telr[1] = min([eo.to_n().calculate_tl() - eo.time() for eo in self.outs()], default = self.__telr[0])
+		return self.__telr[1]
 
 	def calculate_r(self):
-		self.__t_e_l_r[2] = self.__t_e_l_r[1] - self.__t_e_l_r[0]
-		if self.__t_e_l_r[2] == 0:
-			self.__is_on_critical = True
-	# if self.__t_e_l_r[2] == 0:
-	# 	self.__is_on_critical = True
-	# return self.__t_e_l_r[2]
+		self.__telr[2] = self.__telr[1] - self.__telr[0]
+		if self.__telr[2] == 0:
+			self.__is_critical = True
 
 	def merge(self, n):
 		for e in n.outs():
 			if e not in self.__outs:
 				self.__outs.append(e)
-		# self.__outs.extend(n.__outs)
 		for b in n.ins():
 			b.set_to_n(self)
 		for b in n.outs():
@@ -120,26 +111,18 @@ class Node:
 	def outs(self):
 		return self.__outs
 
-	def outs_ts(self):
-		return [b.name() for b in self.__outs]
-
 	def times(self):
-		return self.__t_e_l_r
+		return self.__telr
 
 	def name(self):
 		return self.__id
 
 	def __str__(self):
-		pl, ol = '', ''
-		for fb in self.__ins:
-			pl += f'{fb.name()}'
-		for tb in self.__outs:
-			ol += f'{tb.name()}'
-		if not pl:
-			pl = '_'
-		if not ol:
-			ol = '_'
-		return pl + f'N{self.__id}' + ol
+		pl = ''.join([f'{fe.name()}' for fe in self.ins()])
+		ol = ''.join([f'{te.name()}' for te in self.outs()])
+		pl = '_' if not pl else pl
+		ol = '_' if not ol else ol
+		return pl + f'N{self.name()}' + ol
 
 
 class Edge:
@@ -155,20 +138,20 @@ class Edge:
 		self.__r_fl_fr = [None, None]
 		self.__from = None
 		self.__to = None
-		self.__is_in_critical = False
+		self.__is_critical = False
 
 	def calculate(self):
-		self.__t_ls = self.__to.times()[1] - self.__t
-		self.__t_ee = self.__from.times()[0] + self.__t
-		self.__r_fl_fr[0] = self.__to.times()[1] - self.__from.times()[0] - self.__t
-		self.__r_fl_fr[1] = self.__to.times()[0] - self.__from.times()[0] - self.__t
+		self.__t_ls = self.to_n().times()[1] - self.__t
+		self.__t_ee = self.from_n().times()[0] + self.__t
+		self.__r_fl_fr[0] = self.to_n().times()[1] - self.from_n().times()[0] - self.__t
+		self.__r_fl_fr[1] = self.to_n().times()[0] - self.from_n().times()[0] - self.__t
 
 	def set_critical(self, v = True):
-		if self.__from.is_on_critical() and self.__to.is_on_critical():
-			self.__is_in_critical = v
+		if self.from_n().is_critical() and self.to_n().is_critical():
+			self.__is_critical = v
 
-	def is_on_critical(self):
-		return self.__is_in_critical
+	def is_critical(self):
+		return self.__is_critical
 
 	def tls_tee_rfl_rfr(self):
 		return [self.__t_ls, self.__t_ee, self.__r_fl_fr[0], self.__r_fl_fr[1]]
@@ -202,27 +185,18 @@ class Edge:
 			f = self.from_n().name()
 		else:
 			f = 'None'
-		return f'{self.__t}{self.__n}E{f}-{t}'
+		return f'{self.time()}{self.name()}E{f}-{t}'
 
 
-def find_n_with(nodes, edges, flag = 'ins'):
-	ens = [e.name() for e in edges]
-	for n in nodes:
-		cur_bs = [b.name() for b in n.ins()]
+def find_n_with(nodes_to_search_in, edges_to_search, flag = 'ins'):
+	ens = [e.name() for e in edges_to_search]
+	for n in nodes_to_search_in:
+		cur_es = [b.name() for b in n.ins()]
 		if flag == 'outs':
-			cur_bs = [b.name() for b in n.outs()]
-		if set(ens) == set(cur_bs):
+			cur_es = [b.name() for b in n.outs()]
+		if set(ens) == set(cur_es):
 			return n
 	return False
-
-
-# def find_n_with_outs(ns, outs):
-# 	bns = [e.name() for e in outs]
-# 	for n in ns:
-# 		cur_bs = [b.name() for b in n.outs()]
-# 		if set(bns) == set(cur_bs):
-# 			return n
-# 	return False
 
 
 def find_start(ns):
@@ -234,22 +208,12 @@ def find_end(ns):
 
 
 def find_endless_edges(ns):
-	ends = []
-	for n in ns:
-		cur_outs = n.outs()
-		for eo in cur_outs:
-			if not eo.to_n():
-				ends.append(eo)
+	ends = [eo for eo in sum([n.outs() for n in ns], []) if not eo.to_n()]
 	return ends
 
 
 def find_startless_edges(ns):
-	starts = []
-	for n in ns:
-		cur_ins = n.ins()
-		for ei in cur_ins:
-			if not ei.from_n():
-				starts.append(ei)
+	starts = [ei for ei in sum([n.ins() for n in ns], []) if not ei.from_n()]
 	return starts
 
 
@@ -257,51 +221,6 @@ def link(ins, n, outs):
 	n.set_ins(ins)
 	n.set_outs(outs)
 	return n
-
-
-# class Path:
-# 	def __init__(self):
-# 		self.__sn = None
-# 		self.__pl = None
-# 		self.__t = None
-# 		self.__p = None
-#
-# 	def find_critical(self):
-# 		pass
-#
-# 	def set_sn(self, sn):
-# 		self.__sn = sn
-#
-# 	def set_p(self, pl):
-# 		self.__pl = pl
-#
-# 	def path(self):
-# 		if self.__p:
-# 			return self.__p
-# 		else:
-# 			return self.go_p()
-#
-# 	def go_p(self):
-# 		pl = self.__pl
-# 		es = [self.__sn]
-# 		cur_n = self.__sn
-# 		for bl in pl:
-# 			print()
-# 			print(f'last node {es[len(es) - 1]}')
-# 			print(f'cur leaves {cur_n.outs_ts()}')
-# 			print(f'we go {bl}')
-# 			if bl in cur_n.outs_ts():
-# 				b = cur_n.outs()[cur_n.outs_ts().index(bl)]
-# 				print()
-# 				es.append(b.name())
-# 				es.append(b.to_n())
-# 				cur_n = b.to_n()
-# 			else:
-# 				print(es)
-# 				print([b.name() for b in cur_n.outs()])
-# 				raise 'path string given to Path is invalid'
-# 		self.__p = es
-# 		return es
 
 
 class Graph:
@@ -312,22 +231,22 @@ class Graph:
 
 	def update_all_id(self):
 		self.__sn.update().update_id(1)
-		find_end(self.__ns).update().update_id(len(self.__ns))
+		find_end(self.nodes()).update().update_id(len(self.nodes()))
 		i = 2
-		for n in self.__ns:
+		for n in self.nodes():
 			n.update()
 			if not n.is_start() and not n.is_end():
 				n.update_id(i)
 				i += 1
 
 	def complete(self):
-		if not find_end(self.__ns):
+		if not find_end(self.nodes()):
 			n = Node()
-			n.set_ins(find_endless_edges(self.__ns))
+			n.set_ins(find_endless_edges(self.nodes()))
 			self.__ns.append(n)
-		if not find_start(self.__ns):
+		if not find_start(self.nodes()):
 			n = Node()
-			n.set_outs(find_start(self.__ns))
+			n.set_outs(find_start(self.nodes()))
 			self.__ns.append(n)
 			self.__sn = n
 
@@ -340,7 +259,7 @@ class Graph:
 	def edges(self):
 		pushed = []
 		result = []
-		for n in self.__ns:
+		for n in self.nodes():
 			for e in n.ins():
 				if not id(e) in pushed:
 					result.append(e)
@@ -351,46 +270,35 @@ class Graph:
 					pushed.append(id(e))
 		return result
 
-	# def set_sn(self, sn):
-	# 	self.__sn = sn
-	# 	return self
-
 	def set_nodes(self, ns):
 		self.__ns = ns
-		self.__sn = find_start(self.__ns)
+		self.__sn = find_start(self.nodes())
 
 	def merge(self):
-		for n in self.__ns:
+		for n in self.nodes():
 			def rule(test_n):
 				return Node.can_merge_ns(n, test_n)
 
-			for n2 in list(filter(rule, self.__ns)):
+			for n2 in list(filter(rule, self.nodes())):
 				n.merge(n2)
 				self.__ns.remove(n2)
 
 	def calculate_parameters(self):
-		find_end(self.__ns).calculate_te()
-		find_start(self.__ns).calculate_tl()
-		for n in self.__ns:
+		find_end(self.nodes()).calculate_te()
+		find_start(self.nodes()).calculate_tl()
+		for n in self.nodes():
 			n.calculate_r()
 		for e in self.edges():
 			e.calculate()
 
 	def pave_critical_way(self):
 		cur_node = self.__sn
-		tour = []
+		self.__cpt = 0
 		while cur_node.outs():
-			ne = critical_path_from(cur_node)[1]
+			ne = Node.critical_path(cur_node)[1]
 			ne.set_critical()
-			print(f'just made {ne} crit edge')
+			self.__cpt += ne.time()
 			cur_node = ne.to_n()
-			print(cur_node)
-			print(cur_node.outs())
-		print([e.name() for e in tour])
-
-	# for e in self.edges():
-	# 	if e.is_on_critical():
-	# 		print(e)
 
 	def organize(self):
 		self.merge()
@@ -398,22 +306,3 @@ class Graph:
 		self.update_all_id()
 		self.calculate_parameters()
 		self.pave_critical_way()
-
-
-def critical_path_from(node):
-	if node.outs():
-		periods = []
-		# row = [unicode(x.strip()) for x in row if x is not None else '']
-		periods = [critical_path_from(e.to_n())[0] + e.time() if e.to_n().is_on_critical() else 0 for e in node.outs()]
-		# for e in node.outs():
-		# 	if e.to_n().is_on_critical():
-		# 		periods.append(critical_path_from(e.to_n())[0] + e.time())
-		# 	else:
-		# 		periods.append(0)
-		nc = [[e, e.to_n()] for e in node.outs() if e.to_n().is_on_critical()]
-		print(f'nce are {[e[0].name() for e in nc]}')
-		periods = [critical_path_from(n[1])[0] + n[0].time() for n in nc]
-		print(periods)
-		return [max(periods, default = 0), nc[np.array(periods).argmax()][0]]
-	else:
-		return [0, None]
