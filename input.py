@@ -1,4 +1,4 @@
-from nga import *
+from cpm import *
 
 B = {
 	'a': Edge('a', 3),

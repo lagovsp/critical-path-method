@@ -1,3 +1,6 @@
+import numpy as np
+
+
 class Node:
 	__nc = 0
 
@@ -18,7 +21,7 @@ class Node:
 		self.__ins = []
 		self.__outs = []
 		self.__t_e_l_r = [None, None, None]
-		self.__is_in_critical = False
+		self.__is_on_critical = False
 		self.__is_start = None
 		self.__is_end = None
 
@@ -42,8 +45,8 @@ class Node:
 	def is_start(self):
 		return self.__is_start
 
-	def is_in_critical(self):
-		return self.__is_in_critical
+	def is_on_critical(self):
+		return self.__is_on_critical
 
 	def update(self):
 		self.check_if_is_start()
@@ -94,9 +97,9 @@ class Node:
 	def calculate_r(self):
 		self.__t_e_l_r[2] = self.__t_e_l_r[1] - self.__t_e_l_r[0]
 		if self.__t_e_l_r[2] == 0:
-			self.__is_in_critical = True
+			self.__is_on_critical = True
 		if self.__t_e_l_r[2] == 0:
-			self.__is_in_critical = True
+			self.__is_on_critical = True
 		return self.__t_e_l_r[2]
 
 	def merge(self, n):
@@ -160,13 +163,11 @@ class Edge:
 		self.__r_fl_fr[0] = self.__to.times()[1] - self.__from.times()[0] - self.__t
 		self.__r_fl_fr[1] = self.__to.times()[0] - self.__from.times()[0] - self.__t
 
-	def check_if_is_in_critical(self):
-		if self.__from.is_in_critical() and self.__to.is_in_critical():
-			self.__is_in_critical = True
-		else:
-			self.__is_in_critical = False
+	def set_critical(self, v = True):
+		if self.__from.is_on_critical() and self.__to.is_on_critical():
+			self.__is_in_critical = v
 
-	def is_in_critical(self):
+	def is_on_critical(self):
 		return self.__is_in_critical
 
 	def tls_tee_rfl_rfr(self):
@@ -375,27 +376,38 @@ class Graph:
 		for e in self.edges():
 			e.calculate()
 
-	def pave_way(self):
-		# cur_node = self.__sn
-		# while cur_node.outs():
-		# 	for eo in cur_node.outs():
-		# 		if eo.to_n().times()[2] == 0:
-		# 			eo.check_if_is_in_critical()
-		# 			cur_node = eo.to_n()
-		# 			break
-		self.__cpt = 0
-		cur_node = find_end(self.__ns)
-		while cur_node.ins():
-			for ei in cur_node.ins():
-				if ei.from_n().times()[2] == 0:
-					ei.check_if_is_in_critical()
-					self.__cpt += ei.time()
-					cur_node = ei.from_n()
-					break
+	def pave_critical_way(self):
+		cur_node = self.__sn
+		tour = []
+		while cur_node.outs():
+			ne = cur_node.outs()[best_critical_path_to_end(cur_node)[1]]
+			# print(ne)
+			# print(f'found {ne}')
+			tour.append(ne)
+			ne.set_critical()
+			cur_node = ne.to_n()
+			print(cur_node)
+			print(cur_node.outs())
+		print(tour)
+
+	# for e in self.edges():
+	# 	if e.is_on_critical():
+	# 		print(e)
 
 	def organize(self):
 		self.merge()
 		self.complete()
 		self.update_all_id()
 		self.calculate_parameters()
-		self.pave_way()
+		self.pave_critical_way()
+
+
+def best_critical_path_to_end(node):
+	# print(f'now scanning {node}')
+	if node.outs():
+		nce = [e for e in node.outs() if e.to_n().is_on_critical()]
+		ncn = [e.to_n() for e in nce]
+		periods = [best_critical_path_to_end(n)[0] + nce[i].time() for i, n in enumerate(ncn)]
+		return [max(periods), np.argmax(periods)]
+	else:
+		return [0, None]

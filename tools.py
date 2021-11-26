@@ -79,7 +79,7 @@ def show_graph(g):
 	critical_edges = []
 	regular_edges = []
 	for e in g.edges():
-		if e.is_in_critical():
+		if e.is_on_critical():
 			critical_edges.append((e.from_n().name(), e.to_n().name()))
 	for e in g.edges():
 		if (e.from_n().name(), e.to_n().name()) not in critical_edges:
