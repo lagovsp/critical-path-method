@@ -98,9 +98,9 @@ class Node:
 		self.__t_e_l_r[2] = self.__t_e_l_r[1] - self.__t_e_l_r[0]
 		if self.__t_e_l_r[2] == 0:
 			self.__is_on_critical = True
-		if self.__t_e_l_r[2] == 0:
-			self.__is_on_critical = True
-		return self.__t_e_l_r[2]
+	# if self.__t_e_l_r[2] == 0:
+	# 	self.__is_on_critical = True
+	# return self.__t_e_l_r[2]
 
 	def merge(self, n):
 		for e in n.outs():
@@ -380,15 +380,13 @@ class Graph:
 		cur_node = self.__sn
 		tour = []
 		while cur_node.outs():
-			ne = cur_node.outs()[best_critical_path_to_end(cur_node)[1]]
-			# print(ne)
-			# print(f'found {ne}')
-			tour.append(ne)
+			ne = critical_path_from(cur_node)[1]
 			ne.set_critical()
+			print(f'just made {ne} crit edge')
 			cur_node = ne.to_n()
 			print(cur_node)
 			print(cur_node.outs())
-		print(tour)
+		print([e.name() for e in tour])
 
 	# for e in self.edges():
 	# 	if e.is_on_critical():
@@ -402,12 +400,20 @@ class Graph:
 		self.pave_critical_way()
 
 
-def best_critical_path_to_end(node):
-	# print(f'now scanning {node}')
+def critical_path_from(node):
 	if node.outs():
-		nce = [e for e in node.outs() if e.to_n().is_on_critical()]
-		ncn = [e.to_n() for e in nce]
-		periods = [best_critical_path_to_end(n)[0] + nce[i].time() for i, n in enumerate(ncn)]
-		return [max(periods), np.argmax(periods)]
+		periods = []
+		# row = [unicode(x.strip()) for x in row if x is not None else '']
+		periods = [critical_path_from(e.to_n())[0] + e.time() if e.to_n().is_on_critical() else 0 for e in node.outs()]
+		# for e in node.outs():
+		# 	if e.to_n().is_on_critical():
+		# 		periods.append(critical_path_from(e.to_n())[0] + e.time())
+		# 	else:
+		# 		periods.append(0)
+		nc = [[e, e.to_n()] for e in node.outs() if e.to_n().is_on_critical()]
+		print(f'nce are {[e[0].name() for e in nc]}')
+		periods = [critical_path_from(n[1])[0] + n[0].time() for n in nc]
+		print(periods)
+		return [max(periods, default = 0), nc[np.array(periods).argmax()][0]]
 	else:
 		return [0, None]

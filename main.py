@@ -5,8 +5,6 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from pyvis.network import Network
 
-fg.orange = Style(RgbFg(255, 150, 50))
-
 
 def main():
 	tutorial()
