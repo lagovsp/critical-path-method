@@ -42,6 +42,9 @@ class Node:
 	def is_start(self):
 		return self.__is_start
 
+	def is_in_critical(self):
+		return self.__is_in_critical
+
 	def update(self):
 		self.check_if_is_start()
 		self.check_if_is_end()
@@ -79,17 +82,19 @@ class Node:
 			e.set_from_n(self)
 		return self
 
-	def calculate_t_early(self):
-		self.__t_e_l_r[0] = max([ei.from_n().calculate_t_early() + ei.time() for ei in self.__ins], default = 0)
+	def calculate_te(self):
+		self.__t_e_l_r[0] = max([ei.from_n().calculate_te() + ei.time() for ei in self.__ins], default = 0)
 		return self.__t_e_l_r[0]
 
-	def calculate_t_later(self):
-		self.__t_e_l_r[1] = min([eo.to_n().calculate_t_later() - eo.time() for eo in self.__outs], default =
+	def calculate_tl(self):
+		self.__t_e_l_r[1] = min([eo.to_n().calculate_tl() - eo.time() for eo in self.__outs], default =
 		self.__t_e_l_r[0])
 		return self.__t_e_l_r[1]
 
 	def calculate_r(self):
 		self.__t_e_l_r[2] = self.__t_e_l_r[1] - self.__t_e_l_r[0]
+		if self.__t_e_l_r[2] == 0:
+			self.__is_in_critical = True
 		if self.__t_e_l_r[2] == 0:
 			self.__is_in_critical = True
 		return self.__t_e_l_r[2]
@@ -142,17 +147,27 @@ class Edge:
 		self.__id = Edge.__ec
 		self.__n = n
 		self.__t = t
-		self.__t_ls = None  # later_start
-		self.__t_ee = None  # early_end
-		self.__r_fl_fr = [None, None]  # [R_full, R_later]
+		self.__t_ls = None
+		self.__t_ee = None
+		self.__r_fl_fr = [None, None]
 		self.__from = None
 		self.__to = None
+		self.__is_in_critical = False
 
 	def calculate(self):
 		self.__t_ls = self.__to.times()[1] - self.__t
 		self.__t_ee = self.__from.times()[0] + self.__t
 		self.__r_fl_fr[0] = self.__to.times()[1] - self.__from.times()[0] - self.__t
 		self.__r_fl_fr[1] = self.__to.times()[0] - self.__from.times()[0] - self.__t
+
+	def check_if_is_in_critical(self):
+		if self.__from.is_in_critical() and self.__to.is_in_critical():
+			self.__is_in_critical = True
+		else:
+			self.__is_in_critical = False
+
+	def is_in_critical(self):
+		return self.__is_in_critical
 
 	def tls_tee_rfl_rfr(self):
 		return [self.__t_ls, self.__t_ee, self.__r_fl_fr[0], self.__r_fl_fr[1]]
@@ -189,9 +204,9 @@ class Edge:
 		return f'{self.__t}{self.__n}E{f}-{t}'
 
 
-def find_n_with(ns, es, flag = 'ins'):
-	ens = [e.name() for e in es]
-	for n in ns:
+def find_n_with(nodes, edges, flag = 'ins'):
+	ens = [e.name() for e in edges]
+	for n in nodes:
 		cur_bs = [b.name() for b in n.ins()]
 		if flag == 'outs':
 			cur_bs = [b.name() for b in n.outs()]
@@ -217,7 +232,7 @@ def find_end(ns):
 	return find_n_with(ns, [], flag = 'outs')
 
 
-def find_end_es(ns):
+def find_endless_edges(ns):
 	ends = []
 	for n in ns:
 		cur_outs = n.outs()
@@ -227,7 +242,7 @@ def find_end_es(ns):
 	return ends
 
 
-def find_start_es(ns):
+def find_startless_edges(ns):
 	starts = []
 	for n in ns:
 		cur_ins = n.ins()
@@ -292,12 +307,12 @@ class Graph:
 	def __init__(self):
 		self.__sn = None
 		self.__ns = None
-		self.__cp = None
+		self.__cpt = None
 
 	def update_all_id(self):
-		self.__sn.update().update_id(0)
-		find_end(self.__ns).update().update_id(len(self.__ns) - 1)
-		i = 1
+		self.__sn.update().update_id(1)
+		find_end(self.__ns).update().update_id(len(self.__ns))
+		i = 2
 		for n in self.__ns:
 			n.update()
 			if not n.is_start() and not n.is_end():
@@ -307,7 +322,7 @@ class Graph:
 	def complete(self):
 		if not find_end(self.__ns):
 			n = Node()
-			n.set_ins(find_end_es(self.__ns))
+			n.set_ins(find_endless_edges(self.__ns))
 			self.__ns.append(n)
 		if not find_start(self.__ns):
 			n = Node()
@@ -315,10 +330,13 @@ class Graph:
 			self.__ns.append(n)
 			self.__sn = n
 
-	def ns(self):
+	def cpt(self):
+		return self.__cpt
+
+	def nodes(self):
 		return self.__ns
 
-	def es(self):
+	def edges(self):
 		pushed = []
 		result = []
 		for n in self.__ns:
@@ -332,11 +350,11 @@ class Graph:
 					pushed.append(id(e))
 		return result
 
-	def set_sn(self, sn):
-		self.__sn = sn
-		return self
+	# def set_sn(self, sn):
+	# 	self.__sn = sn
+	# 	return self
 
-	def set_ns(self, ns):
+	def set_nodes(self, ns):
 		self.__ns = ns
 		self.__sn = find_start(self.__ns)
 
@@ -350,19 +368,34 @@ class Graph:
 				self.__ns.remove(n2)
 
 	def calculate_parameters(self):
-		find_end(self.__ns).calculate_t_early()
-		find_start(self.__ns).calculate_t_later()
+		find_end(self.__ns).calculate_te()
+		find_start(self.__ns).calculate_tl()
 		for n in self.__ns:
 			n.calculate_r()
-
-		for e in self.es():
+		for e in self.edges():
 			e.calculate()
 
+	def pave_way(self):
+		# cur_node = self.__sn
+		# while cur_node.outs():
+		# 	for eo in cur_node.outs():
+		# 		if eo.to_n().times()[2] == 0:
+		# 			eo.check_if_is_in_critical()
+		# 			cur_node = eo.to_n()
+		# 			break
+		self.__cpt = 0
+		cur_node = find_end(self.__ns)
+		while cur_node.ins():
+			for ei in cur_node.ins():
+				if ei.from_n().times()[2] == 0:
+					ei.check_if_is_in_critical()
+					self.__cpt += ei.time()
+					cur_node = ei.from_n()
+					break
+
 	def organize(self):
-		self.complete()
 		self.merge()
+		self.complete()
 		self.update_all_id()
-
-
-def critical_analysis():
-	pass
+		self.calculate_parameters()
+		self.pave_way()

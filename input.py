@@ -29,4 +29,4 @@ N = [
 ]
 
 g = Graph()
-g.set_ns(N)
+g.set_nodes(N)

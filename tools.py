@@ -1,5 +1,8 @@
 from prettytable import PrettyTable
 from sty import *
+import networkx as nx
+import matplotlib.pyplot as plt
+from pyvis.network import Network
 
 fg.orange = Style(RgbFg(255, 150, 50))
 
@@ -61,3 +64,33 @@ def display_nodes_table(ns, title = 'nodes', verbose = False):
 	table.add_column(fg.orange + 'in edges' + fg.rs, ins)
 	table.add_column(fg.orange + 'out edges' + fg.rs, outs)
 	print(table)
+
+
+def show_graph(g):
+	G = nx.DiGraph()
+	G.add_edges_from([(e.from_n().name(), e.to_n().name()) for e in g.edges()])
+
+	# val_map = {'A': 0,
+	#            'D': 0,
+	#            'H': 0}
+	#
+	# values = [val_map.get(node, 0.25) for node in G.nodes()]
+
+	critical_edges = []
+	regular_edges = []
+	for e in g.edges():
+		if e.is_in_critical():
+			critical_edges.append((e.from_n().name(), e.to_n().name()))
+	for e in g.edges():
+		if (e.from_n().name(), e.to_n().name()) not in critical_edges:
+			regular_edges.append((e.from_n().name(), e.to_n().name()))
+
+	edge_colours = ['black' if edge not in critical_edges else 'red' for edge in G.edges()]
+	pos = nx.spring_layout(G)
+	nx.draw_networkx_nodes(G, pos, cmap = plt.get_cmap('jet'), node_size = 200)
+	nx.draw_networkx_labels(G, pos)
+	nx.draw_networkx_edges(G, pos, edgelist = critical_edges, edge_color = 'r', arrows = True, label = 'Critical path')
+	nx.draw_networkx_edges(G, pos, edgelist = regular_edges, edge_color = 'b', arrows = True)
+
+	plt.title('Network Graph')
+	plt.show()
