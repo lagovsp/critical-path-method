@@ -86,5 +86,29 @@ def show_graph(g):
 	nx.draw_networkx_labels(G, pos)
 
 	plt.title('Network Graph')
-	plt.savefig('analysed-grah.png', )
+	plt.savefig('analysed-graph.png', )
+	plt.show()
+
+
+def show_graph_new(g, moves, i):
+	G = nx.DiGraph()
+	for e in g.edges():
+		G.add_edge(e.from_n().name(), e.to_n().name(), weight = f'{e.name()} ({e.time()}s)')
+	c_edges = []
+	r_edges = []
+	for e in moves:
+		c_edges.append((e.from_n().name(), e.to_n().name()))
+	for e in g.edges():
+		if (e.from_n().name(), e.to_n().name()) not in c_edges:
+			r_edges.append((e.from_n().name(), e.to_n().name()))
+	pos = nx.circular_layout(G)
+	nx.draw_networkx_nodes(G, pos, cmap = plt.get_cmap('jet'), node_size = 200)
+	nx.draw_networkx_edges(G, pos, edgelist = c_edges, edge_color = 'r', arrows = True, label = f'Critical path {i}')
+	nx.draw_networkx_edges(G, pos, edgelist = r_edges, arrows = True, alpha = 0.7, )
+	nx.draw_networkx_edge_labels(G, pos, font_size = 10, edge_labels = nx.get_edge_attributes(G, 'weight'),
+		label_pos = 0.3)
+	nx.draw_networkx_labels(G, pos)
+
+	plt.title(f'Network Graph {i}')
+	plt.savefig(f'analysed-graph-{i}.png', )
 	plt.show()
