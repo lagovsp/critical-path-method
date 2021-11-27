@@ -26,7 +26,7 @@ B = {
 	'i': Edge('i', 3),
 	'j': Edge('j', 2),
 	'k': Edge('k', 5),
-	'l': Edge('l', 12)
+	'l': Edge('l', 13)
 }
 
 # N = [

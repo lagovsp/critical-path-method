@@ -35,6 +35,9 @@ class Node:
 		self.__is_start = None
 		self.__is_end = None
 
+	def reset_parameters(self):
+		self.__telr = [None, None, None]
+
 	def check_if_is_start(self):
 		if not self.__ins:
 			self.__is_start = True
@@ -129,21 +132,15 @@ class Node:
 	def name(self):
 		return self.__id
 
-	def longest_path_to_end(self, g, aim, start_time, hist_mv):
+	def longest_path_to_end(self, g, aim, time_start, prev_edges):
 		if self.outs():
-			for e in self.outs():
-				h = copy.deepcopy(hist_mv)
-				h.append(e)
-				# mv = copy.deepcopy(mv_general)
-				st = copy.deepcopy(start_time)
-				e.to_n().longest_path_to_end(g, aim, st + e.time(), h)
+			for eo in self.outs():
+				h = copy.deepcopy(prev_edges)
+				h.append(eo)
+				eo.to_n().longest_path_to_end(g, aim, time_start + eo.time(), h)
 		else:
-			print('h')
-			print(hist_mv)
-			print('cps')
-			print(g.cps())
-			if start_time >= aim and not g.list_is_list(g.cps()):
-				g.add_cp(hist_mv)
+			if time_start >= aim and not g.already_has_cp(prev_edges):
+				g.add_cp(prev_edges)
 
 	def __str__(self):
 		pl = ''.join([f'{fe.name()}' for fe in self.ins()])
@@ -173,6 +170,11 @@ class Edge:
 		self.__t_ee = self.from_n().times()[0] + self.__t
 		self.__r_fl_fr[0] = self.to_n().times()[1] - self.from_n().times()[0] - self.__t
 		self.__r_fl_fr[1] = self.to_n().times()[0] - self.from_n().times()[0] - self.__t
+
+	def reset_parameters(self):
+		self.__t_ls = None
+		self.__t_ee = None
+		self.__r_fl_fr = [None, None]
 
 	def set_critical(self, v = True):
 		if self.from_n().is_critical() and self.to_n().is_critical():
@@ -205,14 +207,8 @@ class Edge:
 		return self.__n
 
 	def __str__(self):
-		if self.to_n():
-			t = self.to_n().name()
-		else:
-			t = 'None'
-		if self.from_n():
-			f = self.from_n().name()
-		else:
-			f = 'None'
+		t = self.to_n().name() if self.to_n() else 'None'
+		f = self.from_n().name() if self.from_n() else 'None'
 		return f'{self.time()}{self.name()}E{f}-{t}'
 
 
@@ -274,17 +270,11 @@ class Graph:
 				n.update_id(i)
 				i += 1
 
-	def list_is_list(self, mv):
-		if len(mv) != len(self.cps()):
-			print('no')
-			return False
-		for i, item in enumerate(mv):
-			if id(item) != id(self.cps()[i]):
-				print('no')
-
-				return False
-		print('yes')
-		return True
+	def already_has_cp(self, moves):
+		for cp in self.cps():
+			if cp == moves:
+				return True
+		return False
 
 	def complete(self):
 		if not find_end(self.nodes()):
@@ -314,11 +304,11 @@ class Graph:
 		result = []
 		for n in self.nodes():
 			for e in n.ins():
-				if not id(e) in pushed:
+				if id(e) not in pushed:
 					result.append(e)
 					pushed.append(id(e))
 			for e in n.outs():
-				if not id(e) in pushed:
+				if id(e) not in pushed:
 					result.append(e)
 					pushed.append(id(e))
 		return result
@@ -335,6 +325,12 @@ class Graph:
 			for n2 in list(filter(rule, self.nodes())):
 				n.merge(n2)
 				self.__ns.remove(n2)
+
+	def reset_parameters(self):
+		for n in self.__ns:
+			n.reset_parameters()
+		for e in self.edges():
+			e.reset_parameters()
 
 	def calculate_parameters(self):
 		find_end(self.nodes()).calculate_te()
@@ -354,32 +350,18 @@ class Graph:
 			cur_node = ne.to_n()
 
 	def check_other_paths(self, aim):
-		g2 = copy.deepcopy(self)
-		for n in g2.nodes():
+		g = copy.deepcopy(self)
+		for n in g.nodes():
 			if n.times()[2] != 0:
 				for ei in n.ins():
 					ei.from_n().delete_out(ei)
 				for eo in n.outs():
 					eo.to_n().delete_in(eo)
-				g2.remove_node(n)
-		g2.calculate_parameters()
-		g2.__sn = find_start(g2.__ns)
-		cur_node = g2.__sn
-		mv = []
-		general = []
-		cur_node.longest_path_to_end(g2, aim, 0, self.__cps)
-		display_edges_table(g2.edges(), title = 'Help edges', verbose = True)
-		display_nodes_table(g2.nodes(), title = 'Help nodes', verbose = True)
-		print(g2.cps())
-		g2.graphs()
-		self.graphs()
-
-	def do_moves_by_crit_markers(self):
-		mv = []
-		for e in self.edges():
-			if e.is_critical():
-				mv.append(e)
-		self.__cps.append(mv)
+				g.remove_node(n)
+		g.reset_parameters()
+		g.calculate_parameters()
+		g.__sn = find_start(g.__ns)
+		g.__sn.longest_path_to_end(self, aim, 0, [])
 
 	def organize(self):
 		self.merge()
@@ -387,9 +369,8 @@ class Graph:
 		self.update_all_id()
 		self.calculate_parameters()
 		self.pave_critical_path()
-		# self.check_other_paths(self.cpt())
+		self.check_other_paths(self.cpt())
 
-	def graphs(self):
+	def graphs(self, save = False, name = ''):
 		for i, cp in enumerate(self.cps()):
-			print(cp)
-			show_graph_new(self, cp, i + 1)
+			show_graph_new(self, cp, i + 1, main_critical = True if i == 0 else False, save = save, name = name)
