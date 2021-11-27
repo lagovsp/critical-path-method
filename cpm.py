@@ -18,10 +18,10 @@ class Node:
 		return True
 
 	@staticmethod
-	def critical_path(node):
-		if node.outs():
-			periods = [Node.critical_path(e.to_n())[0] + e.time() if e.to_n().is_critical() else 0 for e in node.outs()]
-			return [max(periods, default = 0), node.outs()[np.array(periods).argmax()]]
+	def critical_path(n):
+		if n.outs():
+			periods = [Node.critical_path(e.to_n())[0] + e.time() if e.to_n().is_critical() else 0 for e in n.outs()]
+			return [max(periods, default = 0), n.outs()[np.array(periods).argmax()]]
 		else:
 			return [0, None]
 
@@ -283,7 +283,7 @@ class Graph:
 			self.__ns.append(n)
 		if not find_start(self.nodes()):
 			n = Node()
-			n.set_outs(find_start(self.nodes()))
+			n.set_outs(find_startless_edges(self.nodes()))
 			self.__ns.append(n)
 			self.__sn = n
 
