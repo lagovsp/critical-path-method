@@ -1,6 +1,7 @@
+import copy
+
 import numpy as np
 from tools import *
-import copy
 
 
 class Node:
@@ -98,10 +99,12 @@ class Node:
 
 	def calculate_te(self):
 		self.__telr[0] = max([ei.from_n().calculate_te() + ei.time() for ei in self.ins()], default = 0)
+		print(f'{self} te {self.__telr[0]}')
 		return self.__telr[0]
 
 	def calculate_tl(self):
 		self.__telr[1] = min([eo.to_n().calculate_tl() - eo.time() for eo in self.outs()], default = self.__telr[0])
+		print(f'{self} tl {self.__telr[1]}')
 		return self.__telr[1]
 
 	def calculate_r(self):
@@ -214,21 +217,34 @@ class Edge:
 
 def find_n_with(nodes_to_search_in, edges_to_search, flag = 'ins'):
 	ens = [e.name() for e in edges_to_search]
+	ret_nodes = []
 	for n in nodes_to_search_in:
 		cur_es = [b.name() for b in n.ins()]
 		if flag == 'outs':
 			cur_es = [b.name() for b in n.outs()]
 		if set(ens) == set(cur_es):
-			return n
+			ret_nodes.append(n)
+	if ret_nodes:
+		return ret_nodes
 	return False
 
 
 def find_start(ns):
-	return find_n_with(ns, [], flag = 'ins')
+	res = find_n_with(ns, [], flag = 'ins')
+	if not res:
+		return False
+	if len(res) == 1:
+		return res[0]
+	return False
 
 
 def find_end(ns):
-	return find_n_with(ns, [], flag = 'outs')
+	res = find_n_with(ns, [], flag = 'outs')
+	if not res:
+		return False
+	if len(res) == 1:
+		return res[0]
+	return False
 
 
 def find_endless_edges(ns):
@@ -278,14 +294,18 @@ class Graph:
 
 	def complete(self):
 		if not find_end(self.nodes()):
+			print('end not found')
 			n = Node()
 			n.set_ins(find_endless_edges(self.nodes()))
 			self.__ns.append(n)
 		if not find_start(self.nodes()):
+			print('start not found')
 			n = Node()
 			n.set_outs(find_startless_edges(self.nodes()))
 			self.__ns.append(n)
 			self.__sn = n
+		else:
+			self.__sn = find_start(self.nodes())
 
 	def cpt(self):
 		return self.__cpt
@@ -334,8 +354,10 @@ class Graph:
 
 	def calculate_parameters(self):
 		find_end(self.nodes()).calculate_te()
+		print(f'After all found start is {find_start(self.nodes())}')
 		find_start(self.nodes()).calculate_tl()
 		for n in self.nodes():
+			print(f'{n} {n.times()[1]} - {n.times()[0]}')
 			n.calculate_r()
 		for e in self.edges():
 			e.calculate()
@@ -351,13 +373,34 @@ class Graph:
 
 	def check_other_paths(self, aim):
 		g = copy.deepcopy(self)
+		print(f'all nodes')
+		for n in g.nodes():
+			print(n)
+		print()
 		for n in g.nodes():
 			if n.times()[2] != 0:
+				print(n)
 				for ei in n.ins():
 					ei.from_n().delete_out(ei)
 				for eo in n.outs():
 					eo.to_n().delete_in(eo)
+				print(f'node {n} removed')
 				g.remove_node(n)
+		for n in g.nodes():
+			if n.times()[2] != 0:
+				print(n)
+				for ei in n.ins():
+					ei.from_n().delete_out(ei)
+				for eo in n.outs():
+					eo.to_n().delete_in(eo)
+				print(f'node {n} removed')
+				g.remove_node(n)
+		# self.merge()
+		self.complete()
+		self.update_all_id()
+		for n in g.nodes():
+			print(n)
+
 		g.reset_parameters()
 		g.calculate_parameters()
 		g.__sn = find_start(g.__ns)
