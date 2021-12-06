@@ -14,6 +14,20 @@ B = {
 	'k': Edge('k', 5)
 }
 
+N = [
+	link([], Node(), [B['a']]),
+	link([], Node(), [B['b']]),
+	link([B['a']], Node(), [B['c']]),
+	link([], Node(), [B['d']]),
+	link([B['b'], B['c']], Node(), [B['e']]),
+	link([B['a']], Node(), [B['f']]),
+	link([B['b'], B['c']], Node(), [B['g']]),
+	link([B['a']], Node(), [B['h']]),
+	link([B['h'], B['g']], Node(), [B['i']]),
+	link([B['f'], B['e'], B['d']], Node(), [B['j']]),
+	link([B['b'], B['c']], Node(), [B['k']])
+]
+
 # Nikita
 # N = [
 # 	link([], Node(), [B['a']]),
@@ -60,19 +74,19 @@ B = {
 # ]
 
 # Vanya
-N = [
-	link([], Node(), [B['a']]),
-	link([], Node(), [B['b']]),
-	link([], Node(), [B['c']]),
-	link([B['c']], Node(), [B['d']]),
-	link([B['c']], Node(), [B['e']]),
-	link([B['a']], Node(), [B['f']]),
-	link([B['a']], Node(), [B['g']]),
-	link([B['d'], B['g']], Node(), [B['h']]),
-	link([B['h'], B['e']], Node(), [B['i']]),
-	link([B['b'], B['f'], B['i']], Node(), [B['j']]),
-	link([B['e'], B['h']], Node(), [B['k']])
-]
+# N = [
+# 	link([], Node(), [B['a']]),
+# 	link([], Node(), [B['b']]),
+# 	link([], Node(), [B['c']]),
+# 	link([B['c']], Node(), [B['d']]),
+# 	link([B['c']], Node(), [B['e']]),
+# 	link([B['a']], Node(), [B['f']]),
+# 	link([B['a']], Node(), [B['g']]),
+# 	link([B['d'], B['g']], Node(), [B['h']]),
+# 	link([B['h'], B['e']], Node(), [B['i']]),
+# 	link([B['b'], B['f'], B['i']], Node(), [B['j']]),
+# 	link([B['e'], B['h']], Node(), [B['k']])
+# ]
 
 g = Graph()
 g.set_nodes(N)
