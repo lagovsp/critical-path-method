@@ -30,18 +30,33 @@ B = {
 # ]
 
 # Roma
+# N = [
+# 	link([], Node(), [B['a']]),
+# 	link([B['a']], Node(), [B['b']]),
+# 	link([B['b'], B['f']], Node(), [B['c']]),
+# 	link([B['c'], B['h']], Node(), [B['d']]),
+# 	link([], Node(), [B['e']]),
+# 	link([B['e']], Node(), [B['f']]),
+# 	link([B['e']], Node(), [B['g']]),
+# 	link([B['g'], B['k']], Node(), [B['h']]),
+# 	link([], Node(), [B['i']]),
+# 	link([B['g'], B['k']], Node(), [B['j']]),
+# 	link([B['i']], Node(), [B['k']])
+# ]
+
+# Olya
 N = [
 	link([], Node(), [B['a']]),
-	link([B['a']], Node(), [B['b']]),
-	link([B['b'], B['f']], Node(), [B['c']]),
-	link([B['c'], B['h']], Node(), [B['d']]),
-	link([], Node(), [B['e']]),
-	link([B['e']], Node(), [B['f']]),
-	link([B['e']], Node(), [B['g']]),
-	link([B['g'], B['k']], Node(), [B['h']]),
-	link([], Node(), [B['i']]),
-	link([B['g'], B['k']], Node(), [B['j']]),
-	link([B['i']], Node(), [B['k']])
+	link([], Node(), [B['b']]),
+	link([B['a']], Node(), [B['c']]),
+	link([B['c']], Node(), [B['d']]),
+	link([B['a']], Node(), [B['e']]),
+	link([B['e'], B['d']], Node(), [B['f']]),
+	link([B['c']], Node(), [B['g']]),
+	link([B['g']], Node(), [B['h']]),
+	link([B['h'], B['j'], B['b'], B['f']], Node(), [B['i']]),
+	link([B['c']], Node(), [B['j']]),
+	link([B['g']], Node(), [B['k']])
 ]
 
 g = Graph()

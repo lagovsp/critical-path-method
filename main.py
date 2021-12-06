@@ -9,7 +9,7 @@ def main():
 	display_edges_table(g.edges(), title = 'Analysed edges', verbose = True)
 	display_nodes_table(g.nodes(), title = 'Analysed nodes', verbose = True)
 
-	g.graphs(name = 'v9', save = True)
+	g.graphs(name = 'v8', save = True)
 
 	print(f'The time of Critical path is {g.cpt()}')
 	print(f'There are {g.cpn()} paths with length {g.cpt()}')
