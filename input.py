@@ -15,18 +15,33 @@ B = {
 }
 
 # Nikita
+# N = [
+# 	link([], Node(), [B['a']]),
+# 	link([], Node(), [B['b']]),
+# 	link([], Node(), [B['c']]),
+# 	link([B['a']], Node(), [B['d']]),
+# 	link([B['b']], Node(), [B['e']]),
+# 	link([B['b']], Node(), [B['f']]),
+# 	link([B['d']], Node(), [B['g']]),
+# 	link([B['e']], Node(), [B['h']]),
+# 	link([B['f'], B['c']], Node(), [B['i']]),
+# 	link([B['g']], Node(), [B['j']]),
+# 	link([B['h'], B['i']], Node(), [B['k']])
+# ]
+
+# Roma
 N = [
 	link([], Node(), [B['a']]),
-	link([], Node(), [B['b']]),
-	link([], Node(), [B['c']]),
-	link([B['a']], Node(), [B['d']]),
-	link([B['b']], Node(), [B['e']]),
-	link([B['b']], Node(), [B['f']]),
-	link([B['d']], Node(), [B['g']]),
-	link([B['e']], Node(), [B['h']]),
-	link([B['f'], B['c']], Node(), [B['i']]),
-	link([B['g']], Node(), [B['j']]),
-	link([B['h'], B['i']], Node(), [B['k']])
+	link([B['a']], Node(), [B['b']]),
+	link([B['b'], B['f']], Node(), [B['c']]),
+	link([B['c'], B['h']], Node(), [B['d']]),
+	link([], Node(), [B['e']]),
+	link([B['e']], Node(), [B['f']]),
+	link([B['e']], Node(), [B['g']]),
+	link([B['g'], B['k']], Node(), [B['h']]),
+	link([], Node(), [B['i']]),
+	link([B['g'], B['k']], Node(), [B['j']]),
+	link([B['i']], Node(), [B['k']])
 ]
 
 g = Graph()
