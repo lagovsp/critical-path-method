@@ -45,18 +45,33 @@ B = {
 # ]
 
 # Olya
+# N = [
+# 	link([], Node(), [B['a']]),
+# 	link([], Node(), [B['b']]),
+# 	link([B['a']], Node(), [B['c']]),
+# 	link([B['c']], Node(), [B['d']]),
+# 	link([B['a']], Node(), [B['e']]),
+# 	link([B['e'], B['d']], Node(), [B['f']]),
+# 	link([B['c']], Node(), [B['g']]),
+# 	link([B['g']], Node(), [B['h']]),
+# 	link([B['h'], B['j'], B['b'], B['f']], Node(), [B['i']]),
+# 	link([B['c']], Node(), [B['j']]),
+# 	link([B['g']], Node(), [B['k']])
+# ]
+
+# Vanya
 N = [
 	link([], Node(), [B['a']]),
 	link([], Node(), [B['b']]),
-	link([B['a']], Node(), [B['c']]),
+	link([], Node(), [B['c']]),
 	link([B['c']], Node(), [B['d']]),
-	link([B['a']], Node(), [B['e']]),
-	link([B['e'], B['d']], Node(), [B['f']]),
-	link([B['c']], Node(), [B['g']]),
-	link([B['g']], Node(), [B['h']]),
-	link([B['h'], B['j'], B['b'], B['f']], Node(), [B['i']]),
-	link([B['c']], Node(), [B['j']]),
-	link([B['g']], Node(), [B['k']])
+	link([B['c']], Node(), [B['e']]),
+	link([B['a']], Node(), [B['f']]),
+	link([B['a']], Node(), [B['g']]),
+	link([B['d'], B['g']], Node(), [B['h']]),
+	link([B['h'], B['e']], Node(), [B['i']]),
+	link([B['b'], B['f'], B['i']], Node(), [B['j']]),
+	link([B['e'], B['h']], Node(), [B['k']])
 ]
 
 g = Graph()
